@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TapLine — Read One Sentence at a Time</title>
+  <meta name="description" content="TapLine is an ADHD-friendly EPUB reader that turns books into one sentence at a time — so you can read in the gaps of your day without willpower. Built by an ADHD reader, for ADHD readers.">
+  <style>
+    @font-face {
+      font-family: "TapLineLora";
+      src: url("TapLine/Resources/Fonts/Lora-Regular.ttf") format("truetype");
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "TapLineMontserrat";
+      src: url("TapLine/Resources/Fonts/Montserrat-VariableFont_wght.ttf") format("truetype");
+      font-display: swap;
+    }
+
+    :root {
+      --ink: #17212b;
+      --muted: #5b6572;
+      --paper: #fbfcff;
+      --surface: #ffffff;
+      --line: #d8dee8;
+      --night: #111827;
+      --teal: #0f766e;
+      --teal-light: #e6f4f2;
+      --coral: #e85d4f;
+      --sun: #f2b84b;
+      --blue: #2563eb;
+      --green: #2f855a;
+      --shadow: 0 18px 44px rgba(17, 24, 39, 0.14);
+      --shadow-sm: 0 4px 16px rgba(17, 24, 39, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: "TapLineMontserrat", "Avenir Next", "Segoe UI", sans-serif;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; }
+
+    h1, h2, h3 { margin: 0; line-height: 1.05; }
+    h1, h2 { font-family: "TapLineLora", Georgia, serif; font-weight: 500; }
+    p { margin: 0; line-height: 1.6; }
+
+    /* ── NAV ──────────────────────────────────────────────── */
+    .topbar {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 100;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      background: rgba(17, 24, 39, 0.72);
+      backdrop-filter: blur(16px);
+      color: #fff;
+    }
+    .nav {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      text-decoration: none;
+      color: #fff;
+    }
+    .brand-mark {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--sun);
+      color: var(--night);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      font-weight: 900; font-size: 1rem;
+    }
+    .nav-links {
+      display: flex; align-items: center; gap: 22px;
+      font-size: 0.9rem;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: rgba(255,255,255,0.78);
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: #fff; }
+    .nav-cta {
+      background: var(--coral) !important;
+      color: #fff !important;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+    }
+
+    /* ── HERO ─────────────────────────────────────────────── */
+    .hero {
+      min-height: 90vh;
+      display: flex;
+      align-items: flex-end;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(100deg, rgba(10,15,23,0.96) 38%, rgba(10,15,23,0.55) 66%, rgba(10,15,23,0.2)),
+        url("landing-assets/figure-2.3-single-sentence-mode.png") center right / contain no-repeat,
+        #0d1520;
+    }
+    .hero-inner {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 130px 0 80px;
+    }
+    .eyebrow {
+      display: inline-block;
+      background: var(--sun);
+      color: var(--night);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: clamp(2.4rem, 5.5vw, 4.4rem);
+      max-width: 700px;
+      margin-bottom: 20px;
+    }
+    .hero-copy {
+      max-width: 580px;
+      font-size: 1.15rem;
+      color: rgba(255,255,255,0.84);
+      line-height: 1.65;
+      margin-bottom: 32px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .btn {
+      min-height: 50px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 10px;
+      padding: 0 22px;
+      font-weight: 700;
+      font-size: 0.96rem;
+      text-decoration: none;
+      transition: opacity 0.15s, transform 0.15s;
+      cursor: pointer;
+      border: none;
+      font-family: "TapLineMontserrat", "Avenir Next", sans-serif;
+    }
+    .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn.primary { background: var(--coral); color: #fff; }
+    .btn.ghost {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.28);
+      color: #fff;
+    }
+    .btn.dark { background: var(--night); color: #fff; }
+    .btn.outline {
+      background: transparent;
+      border: 1.5px solid var(--teal);
+      color: var(--teal);
+    }
+
+    /* ── SECTION SHELL ───────────────────────────────────── */
+    .section { padding: 80px 0; }
+    .section.tight { padding: 56px 0; }
+    .wrap { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+    .section-head { max-width: 780px; margin-bottom: 40px; }
+    .section-head.center { text-align: center; max-width: 700px; margin: 0 auto 40px; }
+    h2 { font-size: clamp(2rem, 3.6vw, 2.8rem); margin-bottom: 14px; }
+    .section-head p { color: var(--muted); font-size: 1.06rem; line-height: 1.65; }
+    .label {
+      display: inline-block;
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 10px;
+    }
+
+    /* ── PROBLEM BAND ────────────────────────────────────── */
+    .problem-band {
+      background: #fff;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .prob-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 26px;
+      background: var(--paper);
+    }
+    .prob-icon { font-size: 1.6rem; margin-bottom: 12px; }
+    .prob-card h3 { font-size: 1.05rem; margin-bottom: 8px; font-weight: 700; }
+    .prob-card p { color: var(--muted); font-size: 0.95rem; }
+
+    /* ── GUIDE: ARIEL'S STORY ────────────────────────────── */
+    .guide-band {
+      background: linear-gradient(135deg, #0d1a28 0%, #17303f 100%);
+      color: #fff;
+    }
+    .guide-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 56px;
+      align-items: center;
+    }
+    .guide-text .label { color: var(--sun); }
+    .guide-text h2 { color: #fff; margin-bottom: 20px; }
+    .guide-text p {
+      color: rgba(255,255,255,0.78);
+      font-size: 1.02rem;
+      line-height: 1.72;
+      margin-bottom: 16px;
+    }
+    .guide-text p:last-child { margin-bottom: 0; }
+    .guide-text strong { color: #fff; }
+    .guide-proof { display: grid; gap: 14px; margin-top: 28px; }
+    .proof-pill {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .proof-pill-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--sun);
+      color: var(--night);
+      display: grid; place-items: center;
+      font-weight: 900; font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .proof-pill p { color: rgba(255,255,255,0.8); font-size: 0.92rem; line-height: 1.5; margin: 0; }
+    .proof-pill strong { color: #fff; }
+    .guide-quote-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 16px;
+      padding: 32px;
+    }
+    .guide-quote-card blockquote {
+      margin: 0 0 20px;
+      font-family: "TapLineLora", Georgia, serif;
+      font-size: 1.15rem;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.9);
+      font-style: italic;
+    }
+    .guide-attribution { display: flex; align-items: center; gap: 12px; }
+    .avatar {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--teal), var(--sun));
+      display: grid; place-items: center;
+      font-weight: 900; font-size: 1rem; color: #fff;
+    }
+    .guide-attribution strong { display: block; color: #fff; font-size: 0.95rem; }
+    .guide-attribution span { color: rgba(255,255,255,0.56); font-size: 0.84rem; }
+
+    /* ── HOW IT WORKS ────────────────────────────────────── */
+    .how-band { background: var(--night); color: #fff; }
+    .how-band .section-head p { color: rgba(255,255,255,0.66); }
+    .how-band .label { color: var(--sun); }
+    .how-band h2 { color: #fff; }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .step {
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 12px;
+      padding: 26px;
+      background: rgba(255,255,255,0.04);
+    }
+    .step-num {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: var(--sun);
+      color: var(--night);
+      display: grid; place-items: center;
+      font-weight: 900; font-size: 1.1rem;
+      margin-bottom: 14px;
+    }
+    .step-time {
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--sun);
+      opacity: 0.75;
+      margin-bottom: 8px;
+    }
+    .step h3 { color: #fff; margin-bottom: 8px; font-size: 1.05rem; }
+    .step p { color: rgba(255,255,255,0.68); font-size: 0.93rem; }
+    .steps-total {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.5);
+    }
+    .steps-total strong { color: var(--sun); }
+
+    /* ── INTERACTIVE DEMO ────────────────────────────────── */
+    .demo-band {
+      background: var(--teal-light);
+      border-top: 1px solid #b8d9d4;
+      border-bottom: 1px solid #b8d9d4;
+    }
+    .demo-inner {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 56px;
+      align-items: center;
+    }
+    .demo-text .label { color: var(--teal); }
+    .demo-text h2 { margin-bottom: 16px; }
+    .demo-text p { color: var(--muted); font-size: 1rem; line-height: 1.65; margin-bottom: 16px; }
+    .demo-widget {
+      background: #fff;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .demo-bar {
+      background: #f4f7fb;
+      border-bottom: 1px solid var(--line);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .demo-dots { display: flex; gap: 5px; }
+    .demo-dots span { width: 10px; height: 10px; border-radius: 50%; }
+    .demo-dots span:nth-child(1) { background: #ff5f57; }
+    .demo-dots span:nth-child(2) { background: #ffbd2e; }
+    .demo-dots span:nth-child(3) { background: #28c940; }
+    .demo-content {
+      padding: 28px;
+      min-height: 240px;
+      position: relative;
+      font-family: "TapLineLora", Georgia, serif;
+    }
+    .demo-normal {
+      font-size: 1rem;
+      line-height: 1.8;
+      color: var(--ink);
+    }
+    .demo-normal .highlight-sentence {
+      background: rgba(242, 184, 75, 0.25);
+      border-radius: 3px;
+      padding: 1px 2px;
+    }
+    /* Focus mode: same white bg as normal, just one sentence + nav */
+    .demo-single {
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      min-height: 184px;
+    }
+    .demo-single.active { display: flex; }
+    .demo-normal.hidden { display: none; }
+    .focus-counter {
+      position: absolute;
+      top: 0; right: 0;
+      font-family: "TapLineMontserrat", sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+    .focus-sentence {
+      font-family: "TapLineLora", Georgia, serif;
+      font-size: 1rem;
+      line-height: 1.8;
+      color: var(--ink);
+      margin: 0 0 20px;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding-right: 44px;
+      transition: opacity 0.2s;
+    }
+    .focus-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+    .f-nav-btn {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--ink);
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      font-family: "TapLineMontserrat", sans-serif;
+    }
+    .f-nav-btn:hover { background: var(--paper); border-color: var(--muted); }
+    .f-nav-btn.like {
+      color: var(--coral);
+      border-color: rgba(232,93,79,0.3);
+      background: rgba(232,93,79,0.04);
+    }
+    .f-nav-btn.like.liked { background: var(--coral); color: #fff; border-color: var(--coral); }
+    .demo-toggle-row {
+      border-top: 1px solid var(--line);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .mode-label { color: var(--muted); }
+    .toggle-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      padding: 7px 14px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+      font-family: "TapLineMontserrat", sans-serif;
+    }
+    .toggle-pill:hover { background: #0a5d56; }
+    .toggle-pill.exit { background: transparent; border: 1.5px solid var(--line); color: var(--muted); }
+    .toggle-pill.exit:hover { background: var(--paper); color: var(--ink); border-color: var(--muted); }
+
+    /* ── FEATURES ────────────────────────────────────────── */
+    .features-band { background: #fff; }
+    .features-split {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 52px;
+      align-items: start;
+    }
+    .phone-wrap { position: sticky; top: 90px; }
+    .phone-frame {
+      width: min(320px, 100%);
+      margin: 0 auto;
+      border-radius: 38px;
+      padding: 12px;
+      background: #111827;
+      box-shadow: var(--shadow);
+    }
+    .phone-frame img {
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: opacity 0.15s;
+    }
+    .feature-list { display: grid; gap: 16px; }
+    .feat {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 22px;
+      background: var(--paper);
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 16px;
+      align-items: start;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .feat:hover, .feat.active {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(15,118,110,0.1);
+    }
+    .feat-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      display: grid; place-items: center;
+      font-size: 1.3rem;
+    }
+    .feat:nth-child(1) .feat-icon { background: #e0f2f0; }
+    .feat:nth-child(2) .feat-icon { background: #fef3dc; }
+    .feat:nth-child(3) .feat-icon { background: #e8f0fe; }
+    .feat:nth-child(4) .feat-icon { background: #fce8e6; }
+    .feat:nth-child(5) .feat-icon { background: #e8f5e9; }
+    .feat h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .feat p { color: var(--muted); font-size: 0.93rem; }
+
+    /* ── SCREENSHOT GALLERY ──────────────────────────────── */
+    .gallery-band { background: var(--paper); border-top: 1px solid var(--line); }
+    .gallery {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 32px;
+      flex-wrap: nowrap;
+    }
+    .shot {
+      flex: 0 0 auto;
+      width: 280px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: 0 32px 64px rgba(17,24,39,0.18), 0 8px 24px rgba(17,24,39,0.10);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .shot:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 48px 80px rgba(17,24,39,0.22), 0 12px 32px rgba(17,24,39,0.12);
+    }
+    .shot img {
+      width: 100%;
+      aspect-ratio: 9 / 19.5;
+      object-fit: cover;
+      object-position: top center;
+      background: #eef2f7;
+      display: block;
+    }
+    .shot figcaption {
+      padding: 16px 20px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-align: center;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+      border-top: 1px solid var(--line);
+    }
+
+    /* ── STAKES ──────────────────────────────────────────── */
+    .stakes-band { background: #fff; border-top: 1px solid var(--line); }
+    .stakes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .stake-card { border-radius: 14px; padding: 30px; }
+    .stake-card.failure { background: #fff5f4; border: 1.5px solid #f9d0cc; }
+    .stake-card.success { background: #e6f4f2; border: 1.5px solid #b0d9d4; }
+    .stake-card h3 {
+      font-size: 1.08rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .stake-card.failure h3 { color: #b91c1c; }
+    .stake-card.success h3 { color: var(--teal); }
+    .stake-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+    .stake-item:last-child { margin-bottom: 0; }
+    .stake-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      margin-top: 7px;
+      flex-shrink: 0;
+    }
+    .failure .stake-dot { background: #e85d4f; }
+    .success .stake-dot { background: var(--teal); }
+    .stake-item p { color: var(--ink); line-height: 1.55; }
+
+    /* ── PRICING ─────────────────────────────────────────── */
+    .pricing-band { background: var(--paper); border-top: 1px solid var(--line); }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      align-items: stretch;
+    }
+    .price-card {
+      border-radius: 16px;
+      padding: 20px;
+      background: #fff;
+      border: 1.5px solid var(--line);
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .price-card .price-features { flex: 1; }
+    .price-card:hover { border-color: var(--teal); }
+    .price-card.selected {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 4px rgba(15,118,110,0.1), var(--shadow);
+    }
+    .price-card.featured {
+      position: relative;
+    }
+    .price-card.selected {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 4px rgba(15,118,110,0.12), var(--shadow);
+    }
+    .featured-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--teal);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .price-tier {
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .price-card.selected .price-tier { color: var(--teal); }
+    .price-amount {
+      font-size: 2.2rem;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 4px;
+      color: var(--ink);
+    }
+    .price-amount span { font-size: 1rem; font-weight: 600; color: var(--muted); }
+    .price-annual-total { font-size: 0.85rem; font-weight: 600; color: var(--teal); margin-bottom: 8px; }
+    .price-desc { font-size: 0.88rem; color: var(--muted); margin-bottom: 22px; line-height: 1.5; }
+    .price-features { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 8px; }
+    .price-features li { font-size: 0.92rem; display: flex; align-items: flex-start; gap: 8px; }
+    .price-features li::before { content: "✓"; color: var(--teal); font-weight: 900; flex-shrink: 0; }
+    .price-features li.locked::before { color: #ccc; content: "○"; }
+    .price-features li.locked { color: var(--muted); }
+    .trial-note {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+    .trial-note strong { color: var(--ink); }
+
+    /* ── FINAL CTA ───────────────────────────────────────── */
+    .cta-band {
+      background: #17212b;
+      color: #fff;
+      text-align: center;
+      padding: 90px 0;
+    }
+    .cta-band h2 { color: #fff; max-width: 680px; margin: 0 auto 16px; }
+    .cta-band p { color: rgba(255,255,255,0.72); max-width: 560px; margin: 0 auto 32px; font-size: 1.06rem; }
+    .cta-band .actions { justify-content: center; }
+    .cta-note {
+      margin-top: 18px;
+      font-size: 0.84rem;
+      color: rgba(255,255,255,0.4);
+      white-space: nowrap;
+      font-family: "TapLineLora", Georgia, serif;
+      font-style: italic;
+      letter-spacing: 0.01em;
+    }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    .footer {
+      background: #0f1720;
+      color: rgba(255,255,255,0.54);
+      padding: 28px 0;
+      font-size: 0.88rem;
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .footer a { color: rgba(255,255,255,0.54); text-decoration: none; }
+    .footer a:hover { color: rgba(255,255,255,0.82); }
+    .footer-links { display: flex; gap: 20px; }
+
+    /* ── RESPONSIVE ──────────────────────────────────────── */
+    @media (max-width: 960px) {
+      .nav-links { display: none; }
+      .hero {
+        background:
+          linear-gradient(180deg, rgba(10,15,23,0.92) 0%, rgba(10,15,23,0.76) 60%),
+          url("landing-assets/figure-2.3-single-sentence-mode.png") center 80px / 82% auto no-repeat,
+          #0d1520;
+      }
+      .hero-inner { padding: 380px 0 56px; }
+      .problem-grid,
+      .guide-split,
+      .steps-grid,
+      .demo-inner,
+      .features-split,
+      .stakes-grid { grid-template-columns: 1fr; }
+      .pricing-grid { grid-template-columns: 1fr 1fr; }
+      .phone-wrap { position: static; }
+      .phone-frame { max-width: 280px; }
+      .gallery { gap: 16px; }
+      .shot { width: 180px; }
+    }
+    @media (max-width: 580px) {
+      .hero-inner { padding-top: 300px; }
+      .gallery { gap: 16px; }
+      .shot { width: 200px; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ──────────────────────────────────────────────── -->
+<header class="topbar">
+  <nav class="nav" aria-label="Primary navigation">
+    <a class="brand" href="#top">
+      <span class="brand-mark" style="flex-direction:column; gap:2px;">
+        <span style="font-weight:900; font-size:1rem; line-height:1;">T</span>
+        <span style="width:14px; height:2px; border-radius:1px; background:rgba(255,255,255,0.75); margin-top:-2px;"></span>
+      </span>
+      <span>TapLine</span>
+    </a>
+    <div class="nav-links">
+      <a href="#why">Why TapLine</a>
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a class="nav-cta" href="#download">Try Free →</a>
+    </div>
+  </nav>
+</header>
+
+<main id="top">
+
+  <!-- ── HERO ───────────────────────────────────────────── -->
+  <section class="hero" aria-label="Hero">
+    <div class="hero-inner">
+      <div class="eyebrow">Effortless Reading App for ADHD &amp; Busy People</div>
+      <h1>Your attention isn't broken.<br>Just read one sentence at a time.</h1>
+      <p class="hero-copy">
+        TapLine breaks any EPUB book into one sentence at a time. Pick it up for 2 minutes on the bus. Put it down. Come back to the exact same sentence later. No long reading sessions needed — just books, one sentence at a time, wherever you are.
+      </p>
+      <div class="actions">
+        <a class="btn primary" href="#download">Start reading free</a>
+        <a class="btn ghost" href="#demo">Try it in 30 seconds ↓</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PROBLEM ────────────────────────────────────────── -->
+  <section id="why" class="section tight problem-band" aria-labelledby="problem-title">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="label">Sound Familiar?</div>
+        <h2 id="problem-title">You want to read more. Here's what keeps getting in the way.</h2>
+        <p>None of these are your fault. TapLine is designed specifically around these three blockers.</p>
+      </div>
+      <div class="problem-grid">
+        <article class="prob-card">
+          <div class="prob-icon">😤</div>
+          <h3>Starting feels like too big a commitment</h3>
+          <p>That book has been on your nightstand for months. Every time you think about opening it, your brain quietly asks: "What if I can't keep up? What if I lose interest halfway?" So you don't start at all. The bar feels too high before you've read a single word.</p>
+        </article>
+        <article class="prob-card">
+          <div class="prob-icon">😵</div>
+          <h3>You start — then lose the thread and give up</h3>
+          <p>You read a few chapters, then miss a week. When you come back, you've lost the plot. Starting over feels like too much work, so the book gets quietly abandoned. It's not that you stopped caring — you just couldn't find your way back in.</p>
+        </article>
+        <article class="prob-card">
+          <div class="prob-icon">📱</div>
+          <h3>TikTok and Instagram win every single time</h3>
+          <p>You open the book with good intentions. A notification appears. Two minutes later you're deep in a TikTok rabbit hole you didn't choose. Social media feeds are engineered to be effortless. Reading isn't. That's not a personal failing — that's an unfair fight.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── GUIDE: ARIEL'S STORY ──────────────────────────── -->
+  <section class="section guide-band" aria-labelledby="guide-title">
+    <div class="wrap guide-split">
+      <div class="guide-text">
+        <div class="label">Meet Your Guide</div>
+        <h2 id="guide-title">Ariel built TapLine because she had the same problem.</h2>
+        <p>
+          Living with ADHD, Ariel felt overwhelmed by full pages of text — yet could scroll through feeds for hours. She stopped blaming herself when she realized: <strong>it wasn't a willpower problem. It was a format problem.</strong>
+        </p>
+        <p>
+          She asked a simple question: <em>if we already have the stamina to scroll for hours, why not use that same motion to read real books?</em> TapLine is her answer — built for the brain she has, not the one she wished she had.
+        </p>
+        <p>
+          As an indie developer, Ariel responds personally to every piece of feedback. This isn't a faceless product. It's one reader helping others read more.
+        </p>
+        <div class="guide-proof">
+          <div class="proof-pill">
+            <div class="proof-pill-icon">✦</div>
+            <p><strong>ADHD-first design:</strong> Every decision made with neurodivergent brains in mind — not as an afterthought.</p>
+          </div>
+          <div class="proof-pill">
+            <div class="proof-pill-icon">✦</div>
+            <p><strong>Personal support:</strong> Reach Ariel directly at TapLineHelp@gmail.com. She genuinely replies.</p>
+          </div>
+          <div class="proof-pill">
+            <div class="proof-pill-icon">✦</div>
+            <p><strong>Privacy by default:</strong> All reading data stays on your device. No accounts, no tracking, no cloud sync.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="guide-quote-card">
+          <blockquote>
+            "I used to blame myself for lacking self-control — until I realized the problem isn't discipline. It's that books require sustained focus while social media is designed to keep us engaged effortlessly. TapLine uses the instinct you already have."
+          </blockquote>
+          <div class="guide-attribution">
+            <div class="avatar">A</div>
+            <div>
+              <strong>Ariel</strong>
+              <span>Founder &amp; ADHD reader · TapLine</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HOW IT WORKS ───────────────────────────────────── -->
+  <section id="how" class="section how-band" aria-labelledby="how-title">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="label">How It Works</div>
+        <h2 id="how-title">You're one minute away from your first sentence.</h2>
+        <p>No account. No configuration. Add a book, double-tap, and you're reading. That's the whole setup.</p>
+      </div>
+      <div class="steps-grid">
+        <article class="step">
+          <div class="step-num">1</div>
+          <div class="step-time">~30 seconds</div>
+          <h3>Add a book</h3>
+          <p>Tap the + button in your library and pick any EPUB from your Files app. TapLine processes it automatically — no fiddling required.</p>
+        </article>
+        <article class="step">
+          <div class="step-num">2</div>
+          <div class="step-time">~5 seconds</div>
+          <h3>Double-tap to clear the page</h3>
+          <p>One double-tap hides everything except one sentence. No settings to adjust. You're already in focus mode.</p>
+        </article>
+        <article class="step">
+          <div class="step-num">3</div>
+          <div class="step-time">then just...</div>
+          <h3>Tap right to read the next sentence</h3>
+          <p>And the one after that. Put it down whenever you want — TapLine saves your exact spot automatically every time.</p>
+        </article>
+      </div>
+      <p class="steps-total">⏱ Total time before your first sentence: <strong>under 1 minute.</strong></p>
+    </div>
+  </section>
+
+  <!-- ── INTERACTIVE DEMO ───────────────────────────────── -->
+  <section id="demo" class="section demo-band" aria-labelledby="demo-title">
+    <div class="wrap demo-inner">
+      <div class="demo-text">
+        <div class="label">Try It Right Now</div>
+        <h2 id="demo-title">See exactly how TapLine makes reading easier to start.</h2>
+        <p>
+          Click <strong>"Enter Focus Mode"</strong> below. The full paragraph disappears and one sentence takes its place. Tap next. That's it — that's reading with TapLine.
+        </p>
+        <p>
+          When there's only one sentence on screen, there's nothing to feel overwhelmed by. No sense of how far you still have to go. Just this sentence, then the next.
+        </p>
+        <p style="font-size:0.9rem;">
+          💡 <em>In the real app, a double-tap switches you in or out of this mode at any time.</em>
+        </p>
+      </div>
+      <div>
+        <div class="demo-widget">
+          <div class="demo-bar">
+            <div class="demo-dots"><span></span><span></span><span></span></div>
+            <span id="demo-mode-label">Normal Reading Mode</span>
+          </div>
+          <div class="demo-content">
+            <div class="demo-normal" id="demo-normal">
+              The first thing Sarah noticed about the new city was the silence. Not an empty silence, but a full one — the kind that lives between the sounds people forget to listen for. <span class="highlight-sentence">She had moved here to start again, carrying only what fit in two cases and a lifetime of things she was trying to leave behind.</span> The apartment was small and faced east, so every morning began with light pouring through curtains she hadn't chosen. By the third week, she had stopped flinching when the pipes made their early-morning sound.
+            </div>
+            <div class="demo-single" id="demo-single">
+              <span class="focus-counter" id="sent-progress">3 / 5</span>
+              <p class="focus-sentence" id="sent-text">She had moved here to start again, carrying only what fit in two cases and a lifetime of things she was trying to leave behind.</p>
+              <div class="focus-nav">
+                <button class="f-nav-btn" onclick="demoNav(-1)">← Prev</button>
+                <button class="f-nav-btn like" id="btn-like" onclick="demoLike()">♡ Like</button>
+                <button class="f-nav-btn" onclick="demoNav(1)">Next →</button>
+              </div>
+            </div>
+          </div>
+          <div class="demo-toggle-row" id="demo-toggle-row">
+            <button class="toggle-pill" id="demo-toggle-btn" onclick="toggleDemoMode()">Enter Focus Mode</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FEATURES ──────────────────────────────────────── -->
+  <section id="features" class="section features-band" aria-labelledby="features-title">
+    <div class="wrap features-split">
+      <div class="phone-wrap">
+        <div class="phone-frame">
+          <img id="feature-img"
+            src="landing-assets/figure-3.3-single-sentence-mode.png"
+            alt="TapLine app screenshot">
+        </div>
+      </div>
+      <div>
+        <div class="section-head">
+          <div class="label">Features</div>
+          <h2 id="features-title">Every feature is designed to help you read more.</h2>
+          <p>Not just read differently — actually read more. More books, more often, more easily than you could before.</p>
+        </div>
+        <div class="feature-list">
+          <article class="feat active"
+            data-img="landing-assets/figure-3.3-single-sentence-mode.png"
+            onclick="selectFeature(this)">
+            <div class="feat-icon">🎯</div>
+            <div>
+              <h3>Single-Sentence Mode</h3>
+              <p>Hide the full page and navigate one sentence at a time with a tap or swipe. No visual clutter, no pressure from how far you still have to go.</p>
+            </div>
+          </article>
+          <article class="feat"
+            data-img="landing-assets/figure-3.7-comment-sentence.png"
+            onclick="selectFeature(this)">
+            <div class="feat-icon">❤️</div>
+            <div>
+              <h3>Save Lines That Catch You</h3>
+              <p>Like a sentence or add a comment without losing your place. Review all saved ideas across every book in one panel.</p>
+            </div>
+          </article>
+          <article class="feat"
+            data-img="landing-assets/figure-4.7-stats-tab.png"
+            onclick="selectFeature(this)">
+            <div class="feat-icon">📊</div>
+            <div>
+              <h3>Reading Stats That Motivate</h3>
+              <p>Daily, weekly, and monthly charts show your reading time and progress. Watching the bars grow creates its own dopamine loop — for books.</p>
+            </div>
+          </article>
+          <article class="feat"
+            data-img="landing-assets/figure-3.11-reading-settings.png"
+            onclick="selectFeature(this)">
+            <div class="feat-icon">🎨</div>
+            <div>
+              <h3>Total Visual Comfort</h3>
+              <p>Three themes, nine reading-optimized fonts including OpenDyslexic, and full control over text size, line spacing, margins, and alignment.</p>
+            </div>
+          </article>
+          <article class="feat"
+            data-img="landing-assets/figure-4.2-library-tab.png"
+            onclick="selectFeature(this)">
+            <div class="feat-icon">📚</div>
+            <div>
+              <h3>Smart EPUB Library</h3>
+              <p>Sort by recent, title, author, or progress. Create custom categories. Your exact sentence position is saved automatically every time you close the app.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SCREENSHOT GALLERY ─────────────────────────────── -->
+  <section class="section tight gallery-band" aria-labelledby="screens-title">
+    <div class="wrap">
+      <div class="section-head center">
+        <div class="label">See the App</div>
+        <h2 id="screens-title">Clean, calm, and easy to use from day one.</h2>
+        <p>Your library, your reading view, your settings, your stats — everything is designed to get out of the way and let you read.</p>
+      </div>
+      <div class="gallery">
+        <figure class="shot">
+          <img src="landing-assets/screenshot-theme-morning.png" alt="TapLine in Morning theme">
+          <figcaption>Morning Theme</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="landing-assets/screenshot-theme-afternoon.png" alt="TapLine in Afternoon theme">
+          <figcaption>Afternoon Theme</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="landing-assets/screenshot-theme-twilight.png" alt="TapLine in Twilight theme">
+          <figcaption>Twilight Theme</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── STAKES ─────────────────────────────────────────── -->
+  <section class="section stakes-band" aria-labelledby="stakes-title">
+    <div class="wrap">
+      <div class="section-head center">
+        <div class="label" style="color:var(--muted)">What Changes</div>
+        <h2 id="stakes-title">The difference between this year and last year is stolen minutes turning into finished books.</h2>
+        <p>One sentence on the bus. Three more waiting for coffee. You won't notice it happening — until you finish a book you never thought you'd get through.</p>
+      </div>
+      <div class="stakes-grid">
+        <article class="stake-card failure">
+          <h3>⚠ Without TapLine</h3>
+          <div class="stake-item"><span class="stake-dot"></span><p>The feeds keep winning. The books you bought keep waiting for a "perfect focus window" that never comes.</p></div>
+          <div class="stake-item"><span class="stake-dot"></span><p>Another year passes and you feel further from the reader you want to be.</p></div>
+          <div class="stake-item"><span class="stake-dot"></span><p>The guilt of an unread library grows while the feeds get better at holding your attention.</p></div>
+          <div class="stake-item"><span class="stake-dot"></span><p>You keep telling yourself you'll read more "when things settle down."</p></div>
+        </article>
+        <article class="stake-card success">
+          <h3>✦ With TapLine</h3>
+          <div class="stake-item"><span class="stake-dot"></span><p>The small gaps in your day — waiting in line, coffee brewing, commute — become places where real progress quietly happens.</p></div>
+          <div class="stake-item"><span class="stake-dot"></span><p>You finish books. Not because you forced yourself, but because one sentence always made the next one easy.</p></div>
+          <div class="stake-item"><span class="stake-dot"></span><p>You start thinking of yourself as someone who reads — because the stats show that you actually do.</p></div>
+          <div class="stake-item"><span class="stake-dot"></span><p>The same swipe that used to scroll feeds is finally reading something real.</p></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PRICING ────────────────────────────────────────── -->
+  <section id="pricing" class="section pricing-band" aria-labelledby="pricing-title">
+    <div class="wrap">
+      <div class="section-head center">
+        <div class="label">Simple Pricing</div>
+        <h2 id="pricing-title" style="white-space: nowrap;">Start free. Upgrade when it clicks.</h2>
+        <p>Import and read your first 3 books completely free. No credit card. No time pressure. No bait-and-switch.</p>
+      </div>
+      <div class="pricing-grid">
+
+        <article class="price-card" onclick="selectPlan(this)">
+          <div class="price-tier">Free</div>
+          <div class="price-amount">$0 <span>/ forever</span></div>
+          <p class="price-desc">Try TapLine with your first 3 books — full access, no credit card.</p>
+          <ul class="price-features">
+            <li>Import up to 3 books</li>
+            <li>Single-Sentence Mode</li>
+            <li>Normal reading mode</li>
+            <li>All 3 reading themes</li>
+            <li>Liked sentences &amp; comments</li>
+            <li>Reading statistics</li>
+          </ul>
+          <a class="btn outline" href="https://apps.apple.com/app/tapline" target="_blank" style="width:100%;justify-content:center;">Download Free</a>
+        </article>
+
+        <article class="price-card" onclick="selectPlan(this)">
+          <div class="price-tier">Premium Monthly</div>
+          <div class="price-amount">$1.99 <span>/ month</span></div>
+          <p class="price-desc">Unlimited book imports. Everything in Free, forever. Cancel anytime.</p>
+          <ul class="price-features">
+            <li>Everything in Free</li>
+            <li>Unlimited book imports</li>
+            <li>Cancel anytime</li>
+          </ul>
+          <a class="btn primary" href="https://apps.apple.com/app/tapline" target="_blank" style="width:100%;justify-content:center;">Get Premium</a>
+        </article>
+
+        <article class="price-card featured selected" onclick="selectPlan(this)">
+          <div class="featured-badge">Best Value · Save 25%</div>
+          <div class="price-tier">Premium Annual</div>
+          <div class="price-amount">$1.50 <span>/ month</span></div>
+          <div class="price-annual-total">$17.99 / year</div>
+          <p class="price-desc">Unlimited imports. Save 25% vs monthly.</p>
+          <ul class="price-features">
+            <li>Everything in Free</li>
+            <li>Unlimited book imports</li>
+            <li>Save 25% vs monthly</li>
+            <li>Cancel anytime</li>
+          </ul>
+          <a class="btn primary" href="https://apps.apple.com/app/tapline" target="_blank" style="width:100%;justify-content:center;">Get Premium</a>
+        </article>
+
+        <article class="price-card" onclick="selectPlan(this)">
+          <div class="price-tier">Premium Lifetime</div>
+          <div class="price-amount">$29.99 <span>/ once</span></div>
+          <p class="price-desc">Pay once, own it forever. No subscriptions, no renewals.</p>
+          <ul class="price-features">
+            <li>Everything in Free</li>
+            <li>Unlimited book imports</li>
+            <li>All future updates included</li>
+            <li>No recurring payments ever</li>
+          </ul>
+          <a class="btn dark" href="https://apps.apple.com/app/tapline" target="_blank" style="width:100%;justify-content:center;">Get Lifetime Access</a>
+        </article>
+
+      </div>
+      <p class="trial-note">
+        <strong>First 3 books free</strong> — no credit card, no time pressure. Upgrade when it feels right.
+        Upgrade inside the app via the <strong>Stats tab → Crown icon.</strong>
+      </p>
+    </div>
+  </section>
+
+  <!-- ── FINAL CTA ──────────────────────────────────────── -->
+  <section id="download" class="cta-band" aria-labelledby="cta-title">
+    <div class="wrap">
+      <h2 id="cta-title">Start reading your books again — one sentence at a time.</h2>
+      <p>Download TapLine, import any EPUB, and read your first sentence today. First 3 books free. No credit card needed.</p>
+      <div class="actions">
+        <a class="btn primary" href="https://apps.apple.com/app/tapline" target="_blank">Download on the App Store</a>
+      </div>
+      <p class="cta-note">iOS only · EPUB format · All data stays on your device · No account required</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ── FOOTER ────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <span>© 2025 TapLine · Read more, scroll less.</span>
+    <nav class="footer-links" aria-label="Footer links">
+      <a href="mailto:TapLineHelp@gmail.com">Contact Ariel</a>
+      <a href="#">Privacy Policy</a>
+    </nav>
+  </div>
+</footer>
+
+<!-- ── SCRIPTS ────────────────────────────────────────────── -->
+<script>
+  /* Demo widget */
+  const sentences = [
+    "The first thing Sarah noticed about the new city was the silence.",
+    "Not an empty silence, but a full one — the kind that lives between the sounds people forget to listen for.",
+    "She had moved here to start again, carrying only what fit in two cases and a lifetime of things she was trying to leave behind.",
+    "The apartment was small and faced east, so every morning began with light pouring through curtains she hadn't chosen.",
+    "By the third week, she had stopped flinching when the pipes made their early-morning sound."
+  ];
+  let currentSentence = 2;
+  let liked = false;
+  let inFocusMode = false;
+
+  function updateSentenceDisplay() {
+    var prog = document.getElementById('sent-progress');
+    var text = document.getElementById('sent-text');
+    prog.textContent = (currentSentence + 1) + ' / ' + sentences.length;
+    text.style.opacity = '0';
+    setTimeout(function() {
+      text.textContent = sentences[currentSentence];
+      text.style.opacity = '1';
+    }, 150);
+  }
+
+  function demoNav(dir) {
+    currentSentence = Math.max(0, Math.min(sentences.length - 1, currentSentence + dir));
+    liked = false;
+    var btn = document.getElementById('btn-like');
+    btn.classList.remove('liked');
+    btn.textContent = '♡ Like';
+    updateSentenceDisplay();
+  }
+
+  function demoLike() {
+    liked = !liked;
+    var btn = document.getElementById('btn-like');
+    btn.classList.toggle('liked', liked);
+    btn.textContent = liked ? '♥ Liked' : '♡ Like';
+  }
+
+  function toggleDemoMode() {
+    inFocusMode = !inFocusMode;
+    var normal    = document.getElementById('demo-normal');
+    var single    = document.getElementById('demo-single');
+    var toggleBtn = document.getElementById('demo-toggle-btn');
+    var modeLabel = document.getElementById('demo-mode-label');
+
+    if (inFocusMode) {
+      normal.classList.add('hidden');
+      single.classList.add('active');
+      toggleBtn.textContent = 'Exit Focus Mode';
+      toggleBtn.classList.add('exit');
+      modeLabel.textContent = 'Single-Sentence Mode';
+      updateSentenceDisplay();
+    } else {
+      normal.classList.remove('hidden');
+      single.classList.remove('active');
+      toggleBtn.textContent = 'Enter Focus Mode';
+      toggleBtn.classList.remove('exit');
+      modeLabel.textContent = 'Normal Reading Mode';
+    }
+  }
+
+  /* Pricing plan switcher */
+  function selectPlan(el) {
+    document.querySelectorAll('.price-card').forEach(function(c) { c.classList.remove('selected'); });
+    el.classList.add('selected');
+  }
+
+  /* Feature switcher */
+  function selectFeature(el) {
+    document.querySelectorAll('.feat').forEach(function(f) { f.classList.remove('active'); });
+    el.classList.add('active');
+    var img = el.getAttribute('data-img');
+    if (img) {
+      var featureImg = document.getElementById('feature-img');
+      featureImg.style.opacity = '0';
+      setTimeout(function() {
+        featureImg.src = img;
+        featureImg.style.opacity = '1';
+      }, 150);
+    }
+  }
+</script>
+
+</body>
+</html>
